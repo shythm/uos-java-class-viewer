@@ -13,7 +13,7 @@ public class MethodInfo extends MemberInfo {
 	public MethodInfo(String accessModifier, String returnType, String name, String innerCode) {
 		super(name, accessModifier, returnType);
 		arguments = new ArrayList<String>();
-		this.innerCode = innerCode;
+		this.setInnerCode(innerCode);
 	}
 
 	public void addArgumentType(String arg) {
@@ -45,6 +45,14 @@ public class MethodInfo extends MemberInfo {
 		sb.append(getType()); // append the return type.
 
 		return sb.toString();
+	}
+
+	public String getInnerCode() {
+		return innerCode;
+	}
+
+	public void setInnerCode(String innerCode) {
+		this.innerCode = innerCode;
 	}
 
 	public String toString() {

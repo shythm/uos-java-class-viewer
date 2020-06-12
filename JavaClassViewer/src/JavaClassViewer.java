@@ -1,26 +1,27 @@
 import javax.swing.*;
-import javax.swing.event.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 
 /**
- * Java
+ * Java Class Viewer for Assignment #2 of 객체지향프로그래밍및실습
+ * 
  * @author Seongho Lee
  *
  */
 public class JavaClassViewer extends JFrame {
+	private static final long serialVersionUID = 1L;
+
 	private String rawCode;
 	private ClassParser classParser;
 	private int viewerWidth;
 	private int viewerHeight;
 
 	private JTree classInfoTree;
-	private JTextArea display;
+	private JTextArea usageDisplay;
+	private JTextArea sourceCodeDisplay;
+	private JTable classInfoTable;
 
 	/**
 	 * This is JavaClassViewer Initializer
@@ -75,18 +76,24 @@ public class JavaClassViewer extends JFrame {
 
 		setJMenuBar(menuBar);
 	}
-
+	
 	/**
-	 * This method initializes components. Add a left and right panel, tree view, and
-	 * so on.
+	 * This method initializes components. Add a left and right panel, tree view,
+	 * and so on.
 	 */
 	private void initComponents() {
+		/* Initialize */
 		// Initialize classInfoTree
 		classInfoTree = new JTree();
 		classInfoTree.setModel(null); // set null model to show nothing
-		
+
 		// Initialize display
-		display = new JTextArea(3, 20);
+		usageDisplay = new JTextArea(3, 20);
+		sourceCodeDisplay = new JTextArea(30, 30);
+
+		// Initialize classInfoTable
+		classInfoTable = new JTable();
+		/* --------- */
 		
 		/* Do Layout */
 		// Set the main panel with the left and right panel.
@@ -96,15 +103,39 @@ public class JavaClassViewer extends JFrame {
 		// Set the left panel.
 		JSplitPane leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		leftPanel.setTopComponent(new JScrollPane(classInfoTree)); // add classInfoTree
-		leftPanel.setBottomComponent(new JScrollPane(display)); // add display
+		leftPanel.setBottomComponent(new JScrollPane(usageDisplay)); // add display
 		leftPanel.setDividerLocation((int) (viewerHeight * 0.66));
 		mainPanel.setLeftComponent(leftPanel);
 
 		// Set the right panel.
 		JPanel rightPanel = new JPanel(new BorderLayout());
+		rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
+
 		mainPanel.setRightComponent(rightPanel);
 
 		getContentPane().add(mainPanel);
+		/* --------- */
+		
+		/* Add Event Listener */
+		// Add TreeSelectionListener
+		classInfoTree.addTreeSelectionListener(e -> {
+			Object o = e.getPath().getLastPathComponent(); // get leaf node
+			rightPanel.removeAll(); // remove all components of the rightPanel
+			usageDisplay.setText(""); // clear usageDisplay
+			sourceCodeDisplay.setText(""); // clear sourceCodeDisplay
+			
+			if (o instanceof MethodInfo) {
+				rightPanel.add(new JScrollPane(sourceCodeDisplay), BorderLayout.CENTER);
+				sourceCodeDisplay.setText(((MethodInfo)o).getInnerCode());
+			} else if (o instanceof FieldInfo) {
+				rightPanel.add(new Panel(), BorderLayout.CENTER);
+				usageDisplay.setText("Field has been selected!");
+			} else {
+				rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
+			}
+			
+			validate();
+		});
 		/* --------- */
 	}
 
@@ -149,12 +180,15 @@ public class JavaClassViewer extends JFrame {
 			e.printStackTrace();
 		}
 
-		// Set Tree View
-		ClassInfoTreeModel model = new ClassInfoTreeModel(classParser.getClassInfo());
-		classInfoTree.setModel(model);
+		// Set the properties of the components
+		ClassInfo c = classParser.getClassInfo();
+		ClassInfoTreeModel treeModel = new ClassInfoTreeModel(c);
+		classInfoTree.setModel(treeModel);
+		ClassInfoTableModel tableModel = new ClassInfoTableModel(c);
+		classInfoTable.setModel(tableModel);
 	}
 
 	public static void main(String[] args) {
-		JavaClassViewer viewer = new JavaClassViewer(800, 400);
+		new JavaClassViewer(800, 400);
 	}
 }
