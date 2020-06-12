@@ -125,19 +125,22 @@ public class JavaClassViewer extends JFrame {
 			sourceCodeDisplay.setText(""); // clear sourceCodeDisplay
 
 			if (o instanceof MethodInfo) {
+				MethodInfo info = (MethodInfo)o;
 				rightPanel.add(new JScrollPane(sourceCodeDisplay), BorderLayout.CENTER);
-				sourceCodeDisplay.setText(((MethodInfo) o).getInnerCode());
+				sourceCodeDisplay.setText(info.getInnerCode());
 				
 				StringBuilder sb = new StringBuilder();
 				sb.append("This method uses the field(s) below. \n"); 
-				for (MemberInfo f : ((MethodInfo) o).getReferenceList()) {
-					sb.append(((FieldInfo)f).getName() + '\n');
+				for (int i = 0; i < info.getReferenceListSize(); i++) {
+					sb.append(info.getReference(i).getName() + '\n');
 				}
 				
 				usageDisplay.setText(sb.toString());
 			} else if (o instanceof FieldInfo) {
-				rightPanel.add(new Panel(), BorderLayout.CENTER);
-				usageDisplay.setText("Field has been selected!");
+				FieldInfo info = (FieldInfo)o;
+				FieldReferenceTableModel model = new FieldReferenceTableModel(info);
+				classInfoTable.setModel(model);
+				rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
 			} else {
 				rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
 			}

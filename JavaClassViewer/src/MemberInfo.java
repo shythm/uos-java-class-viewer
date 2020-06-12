@@ -81,7 +81,11 @@ public class MemberInfo {
 		refList.add(ref);
 	}
 
-	public ArrayList<MemberInfo> getReferenceList() {
-		return refList;
+	public int getReferenceListSize() {
+		return refList.size();
+	}
+	
+	public MemberInfo getReference(int index) {
+		return refList.get(index);
 	}
 }
