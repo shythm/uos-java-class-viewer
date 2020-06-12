@@ -7,3 +7,5 @@
 /MethodInfo.class
 /ClassInfoTableModel.class
 /ClassInfoTableModel$Currency.class
+/ClassParser$EmptyClassInfoException.class
+/EmptyClassInfoException.class

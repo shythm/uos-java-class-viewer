@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 /**
  * The information of the member of a class.
  * 
@@ -5,9 +7,12 @@
  *
  */
 public class MemberInfo {
-	private String name;
-	private String accessModifier;
-	private String type;
+	private String name; // the name of a member
+	private String accessModifier; // the accessModifier of a member
+	private String type; // the type of a member
+
+	// for saving the member informations which refer or are referred this member.
+	private ArrayList<MemberInfo> refList;
 
 	/**
 	 * 
@@ -20,6 +25,8 @@ public class MemberInfo {
 		this.name = name;
 		this.accessModifier = accessModifier;
 		this.type = type;
+		
+		refList = new ArrayList<MemberInfo>();
 	}
 
 	/**
@@ -68,5 +75,13 @@ public class MemberInfo {
 	 */
 	public String getType() {
 		return type;
+	}
+
+	public void addReference(MemberInfo ref) {
+		refList.add(ref);
+	}
+
+	public ArrayList<MemberInfo> getReferenceList() {
+		return refList;
 	}
 }

@@ -1,5 +1,6 @@
 import java.util.StringTokenizer;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * Parsing a simple java class code. It has several limits below. First, it can
@@ -18,10 +19,12 @@ public class ClassParser {
 
 	public ClassParser(String code) {
 		rawCode = code;
-		classInfo = new ClassInfo();
+		classInfo = null;
 	}
 
 	public void parse() throws Exception {
+		classInfo = new ClassInfo();
+
 		int startIndex = 0;
 		ArrayList<Integer> stackOfBlockPos = new ArrayList<Integer>(); // for saving block position
 
@@ -93,9 +96,100 @@ public class ClassParser {
 	 * class name and the member informations(methods and fields).
 	 * 
 	 * @return ClassInfo
+	 * @throws EmptyClassInfoException
 	 */
-	public ClassInfo getClassInfo() {
+	public ClassInfo getClassInfo() throws EmptyClassInfoException {
+		if (classInfo == null) {
+			throw new EmptyClassInfoException();
+		}
 		return classInfo;
+	}
+
+	/**
+	 * After call parse() method, you can get the relation of the reference between
+	 * the members by using this method. After call this method, you can get the
+	 * relation of the reference information(ArrayList) by using getReferenceList()
+	 * method in a member.
+	 * 
+	 * @throws EmptyClassInfoException
+	 */
+	public void findReferenceRelation() throws EmptyClassInfoException {
+		ClassInfo info = getClassInfo(); // get member
+		ArrayList<FieldInfo> fields = new ArrayList<FieldInfo>();
+		ArrayList<MethodInfo> methods = new ArrayList<MethodInfo>();
+
+		// Distinguish field and method information.
+		for (int i = 0; i < info.getMemberInfoSize(); i++) {
+			MemberInfo m = info.getMemberInfo(i);
+
+			if (m instanceof FieldInfo) {
+				fields.add((FieldInfo) m);
+			} else if (m instanceof MethodInfo) {
+				methods.add((MethodInfo) m);
+			}
+		}
+
+		// Find the reference relations with the methods.
+		for (MethodInfo m : methods) {
+			// First, get the code of a method.
+			String code = m.getInnerCode();
+
+			// Second, if find "~~" blocks then ignore the blocks.
+			StringBuilder sb = new StringBuilder();
+			boolean isInStringBlock = false;
+			for (int i = 0; i < code.length(); i++) {
+				char c = code.charAt(i);
+
+				if (c == '\"') {
+					// If c is ", it means the start or end of the string block.
+					if (isInStringBlock) {
+						// If isInStringBlock is true, it means that the " is the end of the string
+						// block.
+						isInStringBlock = false;
+						if (i < code.length() - 1) {
+							i++; // **important** If this statement is not in here, the end character " is
+									// included. So add one to the index.
+						}
+					} else {
+						// If isInStringBlock is false, it means that the " is the start of the string
+						// block.
+						isInStringBlock = true;
+					}
+				} else if (c == '\\') {
+					// If c is \, then the next of character is an escape sequence.
+					// Thus ignore the next of character. (Because it can be \")
+					i++;
+				}
+
+				if (isInStringBlock == false) {
+					// If isInStringBlock is false, it means that this character is not in a string
+					// block.
+					sb.append(code.charAt(i)); // append the code to the result.
+				}
+			}
+			code = sb.toString();
+
+			// Third, using StringTokenizer, get the tokens.
+			StringTokenizer st = new StringTokenizer(code, delimiter + "{}()[],.=!^&|+-;");
+			HashSet<String> tokens = new HashSet<String>(); // by HashSet, storing the duplicated tokens can be
+															// prevented.
+			while (st.hasMoreTokens()) {
+				tokens.add(st.nextToken());
+			}
+
+			// Finally, find the reference relations.
+			for (String token : tokens) {
+				for (FieldInfo f : fields) {
+					if (f.getName().equals(token)) {
+						// If the name of this field and the token are equal, add the reference
+						// relation.
+						m.addReference(f);
+						f.addReference(m);
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	private String parseClassName(String code) {

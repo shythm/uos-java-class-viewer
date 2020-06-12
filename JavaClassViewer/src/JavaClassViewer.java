@@ -76,7 +76,7 @@ public class JavaClassViewer extends JFrame {
 
 		setJMenuBar(menuBar);
 	}
-	
+
 	/**
 	 * This method initializes components. Add a left and right panel, tree view,
 	 * and so on.
@@ -94,7 +94,7 @@ public class JavaClassViewer extends JFrame {
 		// Initialize classInfoTable
 		classInfoTable = new JTable();
 		/* --------- */
-		
+
 		/* Do Layout */
 		// Set the main panel with the left and right panel.
 		JSplitPane mainPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -104,7 +104,7 @@ public class JavaClassViewer extends JFrame {
 		JSplitPane leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		leftPanel.setTopComponent(new JScrollPane(classInfoTree)); // add classInfoTree
 		leftPanel.setBottomComponent(new JScrollPane(usageDisplay)); // add display
-		leftPanel.setDividerLocation((int) (viewerHeight * 0.66));
+		leftPanel.setDividerLocation((int) (viewerHeight * 0.50));
 		mainPanel.setLeftComponent(leftPanel);
 
 		// Set the right panel.
@@ -115,7 +115,7 @@ public class JavaClassViewer extends JFrame {
 
 		getContentPane().add(mainPanel);
 		/* --------- */
-		
+
 		/* Add Event Listener */
 		// Add TreeSelectionListener
 		classInfoTree.addTreeSelectionListener(e -> {
@@ -123,17 +123,25 @@ public class JavaClassViewer extends JFrame {
 			rightPanel.removeAll(); // remove all components of the rightPanel
 			usageDisplay.setText(""); // clear usageDisplay
 			sourceCodeDisplay.setText(""); // clear sourceCodeDisplay
-			
+
 			if (o instanceof MethodInfo) {
 				rightPanel.add(new JScrollPane(sourceCodeDisplay), BorderLayout.CENTER);
-				sourceCodeDisplay.setText(((MethodInfo)o).getInnerCode());
+				sourceCodeDisplay.setText(((MethodInfo) o).getInnerCode());
+				
+				StringBuilder sb = new StringBuilder();
+				sb.append("This method uses the field(s) below. \n"); 
+				for (MemberInfo f : ((MethodInfo) o).getReferenceList()) {
+					sb.append(((FieldInfo)f).getName() + '\n');
+				}
+				
+				usageDisplay.setText(sb.toString());
 			} else if (o instanceof FieldInfo) {
 				rightPanel.add(new Panel(), BorderLayout.CENTER);
 				usageDisplay.setText("Field has been selected!");
 			} else {
 				rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
 			}
-			
+
 			validate();
 		});
 		/* --------- */
@@ -175,17 +183,26 @@ public class JavaClassViewer extends JFrame {
 		// Parse the class file
 		classParser = new ClassParser(rawCode);
 		try {
-			classParser.parse();
+			classParser.parse(); // parse this class
+			classParser.findReferenceRelation(); // find the reference relations
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		ClassInfo c = null;
+		try {
+			c = classParser.getClassInfo(); // get class information
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		// Set the properties of the components
-		ClassInfo c = classParser.getClassInfo();
-		ClassInfoTreeModel treeModel = new ClassInfoTreeModel(c);
-		classInfoTree.setModel(treeModel);
-		ClassInfoTableModel tableModel = new ClassInfoTableModel(c);
-		classInfoTable.setModel(tableModel);
+		if (c != null) {
+			ClassInfoTreeModel treeModel = new ClassInfoTreeModel(c);
+			classInfoTree.setModel(treeModel);
+			ClassInfoTableModel tableModel = new ClassInfoTableModel(c);
+			classInfoTable.setModel(tableModel);
+		}
 	}
 
 	public static void main(String[] args) {

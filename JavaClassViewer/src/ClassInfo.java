@@ -8,7 +8,7 @@ public class ClassInfo {
 		memberInfos = new ArrayList<MemberInfo>();
 	}
 
-	public String toString() {
+	public String toString() {		
 		return name;
 	}
 

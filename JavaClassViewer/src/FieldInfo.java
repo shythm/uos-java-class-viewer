@@ -25,7 +25,7 @@ public class FieldInfo extends MemberInfo {
 
 		return sb.toString();
 	}
-
+	
 	public String toString() {
 		return getSimpleInfo();
 	}
