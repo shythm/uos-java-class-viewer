@@ -10,14 +10,12 @@ public class ClassInfoTableModel extends AbstractTableModel {
 	private static final long serialVersionUID = 1L;
 
 	private ClassInfo classInfo;
-	private String[] columnName = { "Name", "Type", "Access" };
-	private Object[][] data;
+	private String[] columnName = { "Name", "Type", "Access" }; // names of the columns
+	private Object[][] data; // data to show
 
 	/**
 	 * This constructor build model and initialize data with the informations in the
 	 * info.
-	 * 
-	 * @param info 
 	 */
 	public ClassInfoTableModel(ClassInfo info) {
 		classInfo = info;
@@ -25,7 +23,7 @@ public class ClassInfoTableModel extends AbstractTableModel {
 	}
 
 	/**
-	 * Initialize data with information in the classInfo
+	 * Initialize data with information in the ClassInfo
 	 */
 	private void initData() {
 		int columnCount = getColumnCount();

@@ -7,7 +7,8 @@ import java.util.HashSet;
  * only parse the basic members which are field and method. Second, it can only
  * parse one class. Third, only the basic modifiers(which are access modifier)
  * are parsed. Fourth, only the basic data types are parsed. Fifth, it ignores
- * an inner class.
+ * an inner class. Sixth, an error can be occurred when there is the comments in
+ * the source code. And so on..
  * 
  * @author Seongho Lee
  *
@@ -17,12 +18,21 @@ public class ClassParser {
 	private final String rawCode; // for saving original code
 	private ClassInfo classInfo; // for parsed result
 
+	/**
+	 * Constructor of a java class parser.
+	 * 
+	 * @param code A string to parse
+	 */
 	public ClassParser(String code) {
 		rawCode = code;
 		classInfo = null;
 	}
 
-	public void parse() throws Exception {
+	/**
+	 * This method parse the java class code. After parsing, you can get the
+	 * information about the class by calling getClassInfo() method.
+	 */
+	public void parse() throws ClassParsingException {
 		classInfo = new ClassInfo();
 
 		int startIndex = 0;
@@ -55,7 +65,7 @@ public class ClassParser {
 				String subCode = "";
 				if (stackOfBlockPos.size() == 0) {
 					// If the size of the stack is 0, it mean an error has been occurred!
-					throw new Exception();
+					throw new ClassParsingException(rawCode);
 				} else {
 					// The below substring(subCode) contains '}'.
 					subCode = rawCode.substring(stackOfBlockPos.remove(stackOfBlockPos.size() - 1), i + 1);
@@ -96,7 +106,6 @@ public class ClassParser {
 	 * class name and the member informations(methods and fields).
 	 * 
 	 * @return ClassInfo
-	 * @throws EmptyClassInfoException
 	 */
 	public ClassInfo getClassInfo() throws EmptyClassInfoException {
 		if (classInfo == null) {
@@ -110,10 +119,8 @@ public class ClassParser {
 	 * the members by using this method. After call this method, you can get the
 	 * relation of the reference information(ArrayList) by using getReferenceList()
 	 * method in a member.
-	 * 
-	 * @throws EmptyClassInfoException
 	 */
-	public void findReferenceRelation() throws EmptyClassInfoException {
+	public void findReferenceRelation() throws EmptyClassInfoException, ClassParsingException {
 		ClassInfo info = getClassInfo(); // get member
 		ArrayList<FieldInfo> fields = new ArrayList<FieldInfo>();
 		ArrayList<MethodInfo> methods = new ArrayList<MethodInfo>();
@@ -135,39 +142,7 @@ public class ClassParser {
 			String code = m.getInnerCode();
 
 			// Second, if find "~~" blocks then ignore the blocks.
-			StringBuilder sb = new StringBuilder();
-			boolean isInStringBlock = false;
-			for (int i = 0; i < code.length(); i++) {
-				char c = code.charAt(i);
-
-				if (c == '\"') {
-					// If c is ", it means the start or end of the string block.
-					if (isInStringBlock) {
-						// If isInStringBlock is true, it means that the " is the end of the string
-						// block.
-						isInStringBlock = false;
-						if (i < code.length() - 1) {
-							i++; // **important** If this statement is not in here, the end character " is
-									// included. So add one to the index.
-						}
-					} else {
-						// If isInStringBlock is false, it means that the " is the start of the string
-						// block.
-						isInStringBlock = true;
-					}
-				} else if (c == '\\') {
-					// If c is \, then the next of character is an escape sequence.
-					// Thus ignore the next of character. (Because it can be \")
-					i++;
-				}
-
-				if (isInStringBlock == false) {
-					// If isInStringBlock is false, it means that this character is not in a string
-					// block.
-					sb.append(code.charAt(i)); // append the code to the result.
-				}
-			}
-			code = sb.toString();
+			code = removeStringBlock(code);
 
 			// Third, using StringTokenizer, get the tokens.
 			StringTokenizer st = new StringTokenizer(code, delimiter + "{}()[],.=!^&|+-;");
@@ -192,34 +167,100 @@ public class ClassParser {
 		}
 	}
 
-	private String parseClassName(String code) {
-		// parse "class CLASSNAME"
+	/**
+	 * This method removes the string blocks to prevent unexpected errors.
+	 * 
+	 * @param code
+	 * @return A code that is removed string block
+	 */
+	private String removeStringBlock(final String code) throws ClassParsingException {
+		StringBuilder sb = new StringBuilder();
+		int len = code.length(); // The length of the code
 
+		for (int i = 0; i < len; i++) {
+			char c = code.charAt(i);
+
+			if (c == '\"') {
+				// If c is ", it means the start of the string block.
+				boolean isInStringBlock = true;
+				while (isInStringBlock) {
+					// Ignore the characters until the end of the string block " appear.
+					i++; // Indicate next character
+					if (i < len) {
+						char tc = code.charAt(i);
+
+						if (tc == '\"') {
+							// If the character is the end of the string block ", set isInStringBlock false.
+							isInStringBlock = false;
+						} else if (tc == '\\') {
+							// If the character is the escape sequence, ignore it.
+							i++;
+						}
+					} else {
+						// If there does not exist the end of the string block ", throw an Exception.
+						throw new ClassParsingException(code);
+					}
+				}
+			} else if (c == '\'') {
+				// If c is ', it means the start of the character block.
+				i++; // Ignore the character
+				if (code.charAt(i) == '\\') {
+					i++; // Ignore an escape sequence.
+				}
+				i++; // Ignore the end of the character block.
+			}
+
+			// The conditional statement above does not be satisfied, append this character.
+			sb.append(code.charAt(i));
+		}
+
+		return sb.toString();
+	}
+
+	/**
+	 * This method gives you the name of method.
+	 * 
+	 * @param code The code of class header which is before '{'.
+	 * @return The name of the class.
+	 */
+	private String parseClassName(String code) {
 		StringTokenizer st = new StringTokenizer(code, delimiter);
+		String token = "";
 		String name = "";
 
-		// the name of a class is the end of tokens before '{'
 		while (st.hasMoreTokens()) {
-			name = st.nextToken();
+			if (token.equals("class")) {
+				// if the previous token is "class" string, the next token represents the name
+				// of this class.
+				name = st.nextToken();
+				break;
+			}
+			token = st.nextToken(); // get the next token
 		}
 
 		return name;
 	}
 
-	public MethodInfo parseMethod(final String code) throws Exception {
-		// example: "public void push(int v) { }"
-		String name = "";
-		String accessModifier = "default";
-		String returnType = "constructor";
+	/**
+	 * This method gives you an instance of MethodInfo by parsing the given code. It
+	 * can only read the code like "public void push(int v) { }".
+	 * 
+	 * @param code
+	 * @return parsed instance of MethodInfo
+	 */
+	public MethodInfo parseMethod(final String code) throws ClassParsingException {
+		String name = ""; // the name of this method
+		String accessModifier = "default"; // the access modifier of this method
+		String returnType = "constructor"; // the constructor of this method
 
 		String token = null;
 
-		// get the start of inner code
+		// get the start index of inner code
 		int startInnerCode = 0;
 		while (code.charAt(startInnerCode) != '{') {
 			startInnerCode++;
 			if (code.length() == startInnerCode)
-				throw new Exception();
+				throw new ClassParsingException(code);
 		}
 
 		// get the start of argument section
@@ -228,9 +269,11 @@ public class ClassParser {
 		while (subCode.charAt(startArgumentCode) != '(') {
 			startArgumentCode++;
 			if (subCode.length() == startArgumentCode)
-				throw new Exception();
+				throw new ClassParsingException(code);
 		}
 
+		// It can be split by two section, one is meta info section(like "public void
+		// push", the other is arguments section like "(int v)".
 		String metaInfo = subCode.substring(0, startArgumentCode);
 		String arguments = subCode.substring(startArgumentCode);
 
@@ -244,7 +287,8 @@ public class ClassParser {
 				returnType = token;
 			}
 		}
-		name = token; // parse the name
+		name = token; // parse the name (because the last token of meta info section is the name of
+						// this method)
 
 		// make methodInfo
 		MethodInfo result = new MethodInfo(accessModifier, returnType, name, code);
@@ -253,18 +297,26 @@ public class ClassParser {
 		StringTokenizer argumentST = new StringTokenizer(arguments, delimiter + "(),");
 		while (argumentST.hasMoreTokens()) {
 			token = argumentST.nextToken();
-			if (isTypeKeyword(token)) {
+			if (isTypeKeyword(token)) { // parse type
 				result.addArgumentType(token);
 			}
 		}
+
 		return result;
 	}
 
+	/**
+	 * This method gives you an instance of FieldInfo by parsing the given code. It
+	 * can only read the code like "private int[] data". It must be removed ; which
+	 * is the end of the code.
+	 * 
+	 * @param code
+	 * @return parsed instance of FieldInfo
+	 */
 	public FieldInfo parseField(String code) {
-		// example: "private int[] data"
-		String name = "";
-		String accessModifier = "default";
-		String type = "";
+		String name = ""; // the name of this field
+		String accessModifier = "default"; // the access modifier of this field
+		String type = ""; // the type of this field
 
 		// get the start of '='.
 		int startEqual = 0;
@@ -293,6 +345,10 @@ public class ClassParser {
 		return result;
 	}
 
+	/**
+	 * Check the given string is access modifier.
+	 * @param str 
+	 */
 	private boolean isAccessModifier(String str) {
 		switch (str) {
 		case "default":
@@ -305,6 +361,10 @@ public class ClassParser {
 		return false;
 	}
 
+	/**
+	 * Check the given string is type keyword.
+	 * @param str 
+	 */
 	private boolean isTypeKeyword(String str) {
 		switch (str) {
 		case "void":

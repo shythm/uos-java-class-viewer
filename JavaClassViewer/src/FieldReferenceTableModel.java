@@ -1,17 +1,30 @@
 import javax.swing.table.AbstractTableModel;
 
+/**
+ * TableModel for a FieldInfo
+ * 
+ * @author Seongho Lee
+ *
+ */
 public class FieldReferenceTableModel extends AbstractTableModel {
 	private static final long serialVersionUID = 1L;
-	
+
 	private FieldInfo fieldInfo;
-	private String[] columnName = { "Name", "Method" };
-	private Object[][] data;
-	
+	private String[] columnName = { "Name", "Method" }; // names of the columns
+	private Object[][] data; // data to show
+
+	/**
+	 * This constructor build model and initialize data with the informations in the
+	 * info.
+	 */
 	public FieldReferenceTableModel(FieldInfo info) {
 		fieldInfo = info;
 		initData();
 	}
-	
+
+	/**
+	 * Initialize data with information in the FieldInfo
+	 */
 	private void initData() {
 		int columnCount = getColumnCount();
 		int rowCount = getRowCount();
@@ -24,7 +37,7 @@ public class FieldReferenceTableModel extends AbstractTableModel {
 			data[i][1] = fieldInfo.getReference(i);
 		}
 	}
-	
+
 	@Override
 	public int getRowCount() {
 		return fieldInfo.getReferenceListSize();
@@ -38,10 +51,10 @@ public class FieldReferenceTableModel extends AbstractTableModel {
 	public String getColumnName(int columnIndex) {
 		return columnName[columnIndex];
 	}
-	
+
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		return data[rowIndex][columnIndex];
 	}
-	
+
 }

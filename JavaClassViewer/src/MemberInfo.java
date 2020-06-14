@@ -25,66 +25,69 @@ public class MemberInfo {
 		this.name = name;
 		this.accessModifier = accessModifier;
 		this.type = type;
-		
+
 		refList = new ArrayList<MemberInfo>();
 	}
 
 	/**
-	 * 
-	 * @param name
+	 * Set the name of this member.
 	 */
 	public void setName(String name) {
 		this.name = name;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * Get the name of this member.
 	 */
 	public String getName() {
 		return name;
 	}
 
 	/**
-	 * 
-	 * @param am
+	 * Set the access modifier of this member.
 	 */
 	public void setAccessModifier(String am) {
 		accessModifier = am;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * Get the access modifier of this member.
 	 */
 	public String getAccessModifier() {
 		return accessModifier;
 	}
 
 	/**
-	 * 
-	 * @param type
+	 * Set the type of this member.
 	 */
 	public void setType(String type) {
 		this.type = type;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * Get the type of this member.
 	 */
 	public String getType() {
 		return type;
 	}
 
+	/**
+	 * Add the given reference information.
+	 */
 	public void addReference(MemberInfo ref) {
 		refList.add(ref);
 	}
 
+	/**
+	 * This method gives you the size of reference list size.
+	 */
 	public int getReferenceListSize() {
 		return refList.size();
 	}
-	
+
+	/**
+	 * This method gives you the reference of MemberInfo instance by index.
+	 */
 	public MemberInfo getReference(int index) {
 		return refList.get(index);
 	}

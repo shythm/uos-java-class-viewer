@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import java.awt.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,15 +15,19 @@ import java.io.IOException;
 public class JavaClassViewer extends JFrame {
 	private static final long serialVersionUID = 1L;
 
-	private String rawCode;
-	private ClassParser classParser;
-	private int viewerWidth;
-	private int viewerHeight;
+	private String rawCode; // an original code
+	private ClassParser classParser; // a class parser
+	private int viewerWidth; // a width of this window
+	private int viewerHeight; // a height of this window
 
-	private JTree classInfoTree;
-	private JTextArea usageDisplay;
-	private JTextArea sourceCodeDisplay;
-	private JTable classInfoTable;
+	private JSplitPane mainPanel; // a main view
+	private JSplitPane leftPanel; // a left partition
+	private JPanel rightPanel; // a right partition
+
+	private JTree classInfoTree; // a tree view of the class information
+	private JTable infoTable; // a table view of the information
+	private JTextArea usageDisplay; // a display for usage of a field
+	private JTextArea sourceCodeDisplay; // a display for the source code of a method
 
 	/**
 	 * This is JavaClassViewer Initializer
@@ -43,6 +49,7 @@ public class JavaClassViewer extends JFrame {
 
 		initMenuBar(); // Initialize Menu Bar
 		initComponents(); // Initialize Components
+		initEventListener(); // Initialize Event Listeners;
 
 		setVisible(true);
 	}
@@ -82,7 +89,7 @@ public class JavaClassViewer extends JFrame {
 	 * and so on.
 	 */
 	private void initComponents() {
-		/* Initialize */
+		/* Initialize Components */
 		// Initialize classInfoTree
 		classInfoTree = new JTree();
 		classInfoTree.setModel(null); // set null model to show nothing
@@ -91,68 +98,121 @@ public class JavaClassViewer extends JFrame {
 		usageDisplay = new JTextArea(3, 20);
 		sourceCodeDisplay = new JTextArea(30, 30);
 
-		// Initialize classInfoTable
-		classInfoTable = new JTable();
+		// Initialize infoTable
+		infoTable = new JTable();
 		/* --------- */
 
 		/* Do Layout */
 		// Set the main panel with the left and right panel.
-		JSplitPane mainPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		mainPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		mainPanel.setDividerLocation((int) (viewerWidth * 0.33));
 
 		// Set the left panel.
-		JSplitPane leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		leftPanel.setTopComponent(new JScrollPane(classInfoTree)); // add classInfoTree
 		leftPanel.setBottomComponent(new JScrollPane(usageDisplay)); // add display
 		leftPanel.setDividerLocation((int) (viewerHeight * 0.50));
 		mainPanel.setLeftComponent(leftPanel);
 
 		// Set the right panel.
-		JPanel rightPanel = new JPanel(new BorderLayout());
-		rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
-
+		rightPanel = new JPanel(new BorderLayout());
+		rightPanel.add(new JPanel(), BorderLayout.CENTER); // add empty panel
 		mainPanel.setRightComponent(rightPanel);
 
 		getContentPane().add(mainPanel);
 		/* --------- */
+	}
 
+	/**
+	 * This method initializes event listeners.
+	 */
+	private void initEventListener() {
 		/* Add Event Listener */
 		// Add TreeSelectionListener
-		classInfoTree.addTreeSelectionListener(e -> {
-			Object o = e.getPath().getLastPathComponent(); // get leaf node
-			rightPanel.removeAll(); // remove all components of the rightPanel
-			usageDisplay.setText(""); // clear usageDisplay
-			sourceCodeDisplay.setText(""); // clear sourceCodeDisplay
+		classInfoTree.addTreeSelectionListener(new TreeSelectionListener() {
+			@Override
+			public void valueChanged(TreeSelectionEvent e) {
+				Object o = e.getPath().getLastPathComponent(); // get leaf node
+				clearDisplays(); // clear the displays
 
-			if (o instanceof MethodInfo) {
-				MethodInfo info = (MethodInfo)o;
-				rightPanel.add(new JScrollPane(sourceCodeDisplay), BorderLayout.CENTER);
-				sourceCodeDisplay.setText(info.getInnerCode());
-				
-				StringBuilder sb = new StringBuilder();
-				sb.append("This method uses the field(s) below. \n"); 
-				for (int i = 0; i < info.getReferenceListSize(); i++) {
-					sb.append(info.getReference(i).getName() + '\n');
+				if (o instanceof MethodInfo) {
+					methodSelectionHandler((MethodInfo) o); // subhandler
+				} else if (o instanceof FieldInfo) {
+					fieldSelectionHandler((FieldInfo) o); // subhandler
+				} else {
+					classSelectionHandler(); // subhandler
 				}
-				
-				usageDisplay.setText(sb.toString());
-			} else if (o instanceof FieldInfo) {
-				FieldInfo info = (FieldInfo)o;
-				FieldReferenceTableModel model = new FieldReferenceTableModel(info);
-				classInfoTable.setModel(model);
-				rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
-			} else {
-				rightPanel.add(new JScrollPane(classInfoTable), BorderLayout.CENTER);
+				validate();
 			}
-
-			validate();
 		});
 		/* --------- */
 	}
 
 	/**
+	 * This method clears displays to show other informations.
+	 */
+	private void clearDisplays() {
+		rightPanel.removeAll(); // remove all components of the rightPanel
+//		infoTable.setModel(null); // clear infoTable (Error occurred.)
+		usageDisplay.setText(""); // clear usageDisplay
+		sourceCodeDisplay.setText(""); // clear sourceCodeDisplay
+	}
+
+	/**
+	 * This event handler for a selection of a class.
+	 */
+	private void classSelectionHandler() {
+		// STEP 1: When select a class, show the name, the type, and the access modifier
+		// of a method or a field in the class.
+		ClassInfoTableModel model = null;
+		try {
+			model = new ClassInfoTableModel(classParser.getClassInfo());
+		} catch (EmptyClassInfoException e) {
+			e.printStackTrace();
+			return;
+		}
+		infoTable.setModel(model); // set model
+		rightPanel.add(new JScrollPane(infoTable), BorderLayout.CENTER);
+	}
+
+	/**
+	 * This event handler for a selection of a method.
+	 * 
+	 * @param info a method information which will be displayed.
+	 */
+	private void methodSelectionHandler(MethodInfo info) {
+		// STEP 2: Show the source code of a method.
+		sourceCodeDisplay.setText(info.getInnerCode());
+		rightPanel.add(new JScrollPane(sourceCodeDisplay), BorderLayout.CENTER);
+
+		// STEP 2: Show the fields which a method uses.
+		StringBuilder sb = new StringBuilder();
+		sb.append(info.getName());
+		sb.append(" uses the field(s) below.\n");
+		if (info.getReferenceListSize() == 0) {
+			sb.append("(Nothing to show)");
+		} else {
+			for (int i = 0; i < info.getReferenceListSize(); i++) {
+				sb.append(info.getReference(i).getName() + '\n');
+			}
+		}
+		usageDisplay.setText(sb.toString());
+	}
+
+	/**
+	 * This event handler for a selection of a field.
+	 * 
+	 * @param info a field information which will be displayed.
+	 */
+	private void fieldSelectionHandler(FieldInfo info) {
+		// STEP 3: Show the methods which reference a field.
+		FieldReferenceTableModel model = new FieldReferenceTableModel(info);
+		infoTable.setModel(model); // set model
+		rightPanel.add(new JScrollPane(infoTable), BorderLayout.CENTER);
+	}
+
+	/**
 	 * Open the 'Java class file open dialog' and store the java class file.
-	 *
 	 */
 	private void loadClassFile() {
 		// Open the FileDialog and store class file path
@@ -179,6 +239,11 @@ public class JavaClassViewer extends JFrame {
 		}
 	}
 
+	/**
+	 * This method is for "open" menu item. Load a class file with a dialog and
+	 * parse the class file. When the parsing has been done successfully, set the
+	 * tree view.
+	 */
 	public void openClassFile() {
 		// Load class file
 		loadClassFile();
@@ -199,12 +264,10 @@ public class JavaClassViewer extends JFrame {
 			e.printStackTrace();
 		}
 
-		// Set the properties of the components
+		// Set the tree view
 		if (c != null) {
 			ClassInfoTreeModel treeModel = new ClassInfoTreeModel(c);
 			classInfoTree.setModel(treeModel);
-			ClassInfoTableModel tableModel = new ClassInfoTableModel(c);
-			classInfoTable.setModel(tableModel);
 		}
 	}
 

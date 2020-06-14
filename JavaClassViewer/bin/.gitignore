@@ -1,12 +1,2 @@
-/ClassInfo.class
-/ClassInfoTreeModel.class
-/ClassParser.class
-/FieldInfo.class
-/JavaClassViewer.class
-/MemberInfo.class
-/MethodInfo.class
-/ClassInfoTableModel.class
-/ClassInfoTableModel$Currency.class
-/ClassParser$EmptyClassInfoException.class
-/EmptyClassInfoException.class
-/FieldReferenceTableModel.class
+/ClassParsingError.class
+/ClassParsingException.class
