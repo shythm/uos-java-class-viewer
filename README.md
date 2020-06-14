@@ -143,12 +143,12 @@ Method와 Field 정보를 저장하는 class에 참조 정보를 `ArrayList`로 
 
 ##### 기본 Layout 구성
 
-![image-20200615030014031](.\img\image-20200615030014031.png)
+![image-20200615030014031](/img/image-20200615030014031.png)
 
 * `JMenuBar`, `JMenu`, `JMenuItem`을 이용해서 File - Open, File - Exit 메뉴를 구현함.
 * `JSplitPane`을 이용해서 왼쪽에 `JTree`와 `JTextArea`를 `JSplitPane`을 이용해서 가로 방향으로 배치하고 오른쪽에 `JTable`과 `JTextArea`를 번갈아 표시할 수 있도록 `JPanel`을 배치함.
 
-![image-20200615030222464](.\img\image-20200615030222464.png)
+![image-20200615030222464](/img/image-20200615030222464.png)
 
 * File - Open 메뉴를 통해 class 파일을 열게 되면 왼쪽 `JTree`에 Class의 이름을 부모 노드로 하고 Member의 이름을 자식 노드로 하는 Tree를 생성함.
   * 파일을 열기 위한 Dialog로는 `FileDialog` Class를 이용함.
@@ -156,12 +156,12 @@ Method와 Field 정보를 저장하는 class에 참조 정보를 `ArrayList`로 
 * 왼쪽 `JTree`에서 부모 노드인 Class 이름을 클릭하게 되면 오른쪽 `JPanel`에 불러온 Class가 가지고 있는 Member들을 표시하는 `JTable`을 배치함.
   * 파싱된 정보를 담고 있는 Class(여기선 `ClassInfo`)로부터 `AbstractTableModel` 상속하여 모델 Class를 구현함. 그리고 `AbstractTableModel`의 모델을 `JTable`의 모델로 설정해서 Table을 표시함.
 
-![image-20200615030245096](.\img\image-20200615030245096.png)
+![image-20200615030245096](/img/image-20200615030245096.png)
 
 * 왼쪽 `JTree`에서 자식 노드인 Field 이름을 클릭하게 되면 오른쪽 `JPanel`에 이 Field를 참조하는 Method들을 나열한 `JTable`이 표시됨.
   * 해당 Field 정보를 담고 있는 Instance(여기선 `FieldInfo`의 Instance)로부터 모든 참조 관계를 불러와 `AbstractTableModel`을 상속한 Class에 저장함. 그리고 이 `AbstractTableModel`의 모델을 `JTable`의 모델로 설정해서 Table을 표시함.
 
-![image-20200615030421461](.\img\image-20200615030421461.png)
+![image-20200615030421461](/img/image-20200615030421461.png)
 
 * 왼쪽 `JTree`에서 자식 노드인 Method 이름을 클릭하게 되면 오른쪽 `JPanel`에 이 Method의 코드를 표시하는 `JTextArea`가 표시됨.
 * 그리고 왼쪽 아래의 `JTextArea`에 이 Method가 사용하는 Field들을 모두 나열함.
