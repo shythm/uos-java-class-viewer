@@ -197,25 +197,108 @@ Method와 Field 정보를 저장하는 class에 참조 정보를 `ArrayList`로 
 * 네 번째로, Parsing을 담당하는 Class로 ClassParser가 있다.
 * 다섯 번째로, Exception Class인 ClassParsingException, EmptyClassInfoException이 있다.
 
+
+
 ### View를 담당하는 Class
 
 #### JavaClassViewer
+
+| Field               | Data Type (Access Modifier) | Description                                                  |
+| ------------------- | --------------------------- | ------------------------------------------------------------ |
+| `rawCode`           | `String `(private)          | `loadClassFile() ` Method를 통해 불러온 원본 Class 소스코드  |
+| `classParser`       | `ClassParser `(private)     | Java Class를 파싱하는 클래스                                 |
+| `viewerWidth`       | `int` (private)             | 창의 가로 길이 (`JSplitPane`의 구간 크기 조절에 사용)        |
+| `viewerHeight`      | `int` (private)             | 창의 세로 길이 (`JSplitPane`의 구간 크기 조절에 사용)        |
+| `mainPanel`         | `JSplitPane` (private)      | 화면을 좌우로 나누는 Main Panel                              |
+| `leftPanel`         | `JSplitPane` (private)      | 왼쪽 화면을 상하로 나누는 Left Panel (위에는 `classInfoTree`가 밑에는 `usageDisplay`가 위치함) |
+| `rightPanel`        | `JPanel` (private)          | 오른쪽 화면에 해당하는 Panel                                 |
+| `classInfoTree`     | `JTree` (private)           | Class의 Member들의 이름을 표시하는 Tree View                 |
+| `infoTable`         | `JTable` (private)          | Class의 Member들의 상세 정보를 표시하거나 특정 Field가 사용되는 Method들을 표시하는데 사용하는 Table View |
+| `usageDispaly`      | `JTextArea` (private)       | Method가 사용하는 Field들을 표시하는 Text Area               |
+| `sourceCodeDisplay` | `JTextArea` (private)       | Method의 소스 코드를 표시하는 Text Area                      |
+
+| Constructor                 | Access Modifier | Description                                                  |
+| --------------------------- | --------------- | ------------------------------------------------------------ |
+| `JavaClassViewer(int, int)` | public          | (창의 가로 길이, 창의 세로 길이)를 인자로 입력받아 `JavaClassViewer`를 생성하고 표시한다. 각종 Component들을 초기화 한다. |
+
+| Method                               | Data Type(Access Modifier) | Description                                                  |
+| ------------------------------------ | -------------------------- | ------------------------------------------------------------ |
+| `openClassFile()`                    | `void` (public)            | File - Open 메뉴를 클릭하면 실행되는 Method. Class 파일을 열 수 있는 Dialog 창이 표시되고 Class 파일을 Parsing 한다. 그리고 왼쪽의 Tree View에 Class Member의 이름을 표시한다. |
+| `main(String[])`                     | `void` (public)            | 프로그램 진입점이다.                                         |
+| `initMenuBar()`                      | `void` (private)           | 화면 상단의 MenuBar를 생성한다.                              |
+| `initComponents()`                   | `void` (private)           | 화면 표시를 위한 각종 Component들을 생성한다. 생성자가 호출될 때 같이 호출된다. |
+| `initEventListener()`                | `void` (private)           | 필요한 Event Listener를 등록한다. 생성자가 호출될 때 같이 호출된다. |
+| `clearDisplays()`                    | `void` (private)           | 화면에 다른 정보를 표시할 때 먼저 화면에 표시된 정보를 지울 때 사용하는 메서드이다. 특히 `infoTable`, `usageDisplay`, `sourceCodeDispaly`의 내용이 초기화된다. |
+| `classSelectionHandler()`            | `void` (private)           | TreeView에서 부모 노드인 Class를 선택했을 때의 Event Handler이다. 오른쪽 화면에 Class의 Member들을 나타내는 Table View를 표시한다. |
+| `methodSelectionHandler(MethodInfo)` | `void` (private)           | TreeView에서 자식 노드인 Method를 선택했 때의 Event Handler이다. 인자로 받은 `MethodInfo` Instance를 통해 오른쪽 화면에 Method의 소스 코드를 표시하고, 왼쪽 하단에 이 Method가 참조하는 Field들을 텍스트로 나열한다. |
+| `fieldSelectionHandler(FieldInfo)`   | `void` (private)           | TreeView에서 자식 노드인 Field를 선택했을 때의 Event Handler이다. 인자로 받은 `FieldInfo` Instance를 통해 오른쪽 화면에 이 Field를 사용하는 Method들을 Table View로 표시한다. |
+| `loadClassFile()`                    | `void` (private)           | 파일을 열 수 있는 Dialog 창이 표시되고, 파일의 내용을 `rawCode`에 적재한다. |
 
 
 
 ### Model을 담당하는 Class
 
-#### ClassInfoTableModel
-
-
-
 #### ClassInfoTreeModel
 
+| Field     | Data Type (Access Modifier) | Description              |
+| --------- | --------------------------- | ------------------------ |
+| classInfo | ClassInfo (private)         | Tree에 표시할 Class 정보 |
+
+| Constructor                   | Access Modifier | Description                                                  |
+| ----------------------------- | --------------- | ------------------------------------------------------------ |
+| ClassInfoTreeModel(ClassInfo) | public          | 인자로 전달받은 ClassInfo Instance를 통해 Tree View에 표시할 수 있는 정보(모델)로 바꾼다. |
+
+| Method                          | Data Type (Access Modifier) | Description                                                  |
+| ------------------------------- | --------------------------- | ------------------------------------------------------------ |
+| getRoot()                       | Object (public)             | 이 Model의 ClassInfo를 반환한다.                             |
+| getChild(Object, int)           | Object (public)             | 이 Model의 ClassInfo에 있는 MemberInfo들을 index를 통해 가져온다. |
+| getChildCount(Object)           | int (public)                | 이 Model의 ClassInfo의 총 Member 수를 반환한다.              |
+| getIndexOfChild(Object, Object) | int (public)                | 인자로 받은 Member 정보에 대해 Index를 반환한다.             |
+| isLeaf(Object)                  | boolean (public)            | 인자로 받은 Object가 Member이면 true를 반환한다. 그 외에는 false. |
 
 
-#### FieldReferenceTreeModel
+
+#### ClassInfoTableModel
+
+| Field        | Data Type (Access Modifier) | Description                                                  |
+| ------------ | --------------------------- | ------------------------------------------------------------ |
+| `classInfo`  | `ClassInfo` (private)       | Table에 표시할 Class 정보                                    |
+| `columnName` | `String[]` (private)        | 첫 번째 column: Name, 두 번째 column: Type, 세 번째 column: Access |
+| `data`       | `Object[][]` (private)      | Table에 표시할 데이터                                        |
+
+| Constructor                      | Access Modifier | Description                                                  |
+| -------------------------------- | --------------- | ------------------------------------------------------------ |
+| `ClassInfoTableModel(ClassInfo)` | public          | 인자로 전달받은 `ClassInfo` Instance를 통해 Table로 표시할 수 있는 정보로 변환한다. 다시 말해, Class의 Member들의 이름, Type, Access Modifier 정보를 table에 표시할 수 있게끔 한다. |
+
+| Method                 | Data Type (Access Modifier) | Description                                                  |
+| ---------------------- | --------------------------- | ------------------------------------------------------------ |
+| `initData()`           | `void` (private)            | 생성자에서 호출되는 Method로 정보를 Table View로 표시할 수 있도록 가공한다. |
+| `getRowCount()`        | `int` (public)              | 정보의 갯수를 반환한다.                                      |
+| `getColumnCount()`     | `int` (public)              | Table의 열의 갯수를 반환한다(여기선 3개).                    |
+| `getColumnName(int)`   | `String` (public)           | 전달받은 인자를 통해 Table의 열의 이름을 반환한다.           |
+| `getValueAt(int, int)` | `Object` (public)           | 전달받은 인자(row, column)를 통해 Table에 표시될 정보를 반환한다. |
 
 
+
+#### FieldReferenceTableModel
+
+| Field        | Data Type (Access Modifier) | Description                                                  |
+| ------------ | --------------------------- | ------------------------------------------------------------ |
+| `fieldInfo`  | `FieldInfo` (private)       | Field 정보(이를 통해 어떤 Method가 이 Field를 사용하는지 알 수 있음) |
+| `columnName` | `String[]` (private)        | 첫 번째 column: Name, 두 번째 column: Method                 |
+| `data`       | `Object[][]` (private)      | Table에 표시할 데이터                                        |
+
+| Constructor                           | Access Modifier | Description                                                  |
+| ------------------------------------- | --------------- | ------------------------------------------------------------ |
+| `FieldReferenceTableModel(FieldInfo)` | public          | 인자로 전달받은 `FieldInfo` Instance를 통해 Table로 표시할 수 있는 정보로 변환한다. 다시 말해, Field를 사용하는 Method들의 정보를 Table에 표시할 수 있게끔 한다. |
+
+| Method                 | Data Type (Access Modifier) | Description                                                  |
+| ---------------------- | --------------------------- | ------------------------------------------------------------ |
+| `initData()`           | `void` (private)            | 생성자에서 호출되는 Method로 정보를 Table View로 표시할 수 있도록 가공한다. |
+| `getRowCount()`        | `int` (public)              | 정보의 갯수를 반환한다.                                      |
+| `getColumnCount()`     | `int` (public)              | Table의 열의 갯수를 반환한다(여기선 2개).                    |
+| `getColumnName(int)`   | `String` (public)           | 전달받은 인자를 통해 Table의 열의 이름을 반환한다.           |
+| `getValueAt(int, int)` | `Object` (public)           | 전달받은 인자(row, column)를 통해 Table에 표시될 정보를 반환한다. |
 
 ### Parsing된 정보를 담는 Class
 
